@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文本转SRT字幕工具</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #3498db;
+            --primary-dark: #2980b9;
+            --secondary: #2ecc71;
+            --secondary-dark: #27ae60;
+            --dark: #2c3e50;
+            --light: #ecf0f1;
+            --gray: #bdc3c7;
+            --warning: #e74c3c;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--dark);
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            color: var(--primary-dark);
+        }
+        
+        header p {
+            font-size: 1.1rem;
+            color: #555;
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+        
+        .scenario-cards {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 25px;
+            flex-wrap: wrap;
+        }
+        
+        .scenario-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            width: 300px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+            transition: transform 0.3s ease;
+        }
+        
+        .scenario-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .scenario-card i {
+            font-size: 2.5rem;
+            color: var(--primary);
+            margin-bottom: 15px;
+        }
+        
+        .scenario-card h3 {
+            margin-bottom: 10px;
+            color: var(--dark);
+        }
+        
+        .scenario-card p {
+            font-size: 0.95rem;
+            color: #666;
+            line-height: 1.5;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 2fr 1.5fr;
+            gap: 25px;
+        }
+        
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr 1fr;
+            }
+            .preview-section {
+                grid-column: span 2;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            .preview-section {
+                grid-column: 1;
+            }
+        }
+        
+        .section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .section h2 {
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid var(--primary);
+            color: var(--primary-dark);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .section h2 i {
+            font-size: 1.5rem;
+        }
+        
+        .param-group {
+            margin-bottom: 20px;
+        }
+        
+        .param-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--dark);
+        }
+        
+        .param-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid var(--gray);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        
+        .param-group input:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+        
+        .info-text {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin-top: 10px;
+            border-left: 4px solid var(--primary);
+        }
+        
+        .info-text strong {
+            color: var(--primary-dark);
+        }
+        
+        textarea {
+            width: 100%;
+            min-height: 300px;
+            padding: 15px;
+            border: 1px solid var(--gray);
+            border-radius: 8px;
+            font-size: 1rem;
+            line-height: 1.6;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+        
+        textarea:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+        
+        .example-text {
+            font-size: 0.85rem;
+            color: #777;
+            margin-top: 5px;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+        
+        .example-text:hover {
+            color: var(--primary);
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 14px 25px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            width: 100%;
+            margin-top: 15px;
+        }
+        
+        .btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        .btn-secondary {
+            background: var(--secondary);
+        }
+        
+        .btn-secondary:hover {
+            background: var(--secondary-dark);
+        }
+        
+        .btn-warning {
+            background: var(--warning);
+        }
+        
+        .btn-warning:hover {
+            background: #c0392b;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 15px;
+            margin-top: auto;
+        }
+        
+        .preview-container {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            min-height: 350px;
+            max-height: 500px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95rem;
+            line-height: 1.8;
+            margin-top: 20px;
+        }
+        
+        .srt-entry {
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px dashed #dee2e6;
+        }
+        
+        .srt-index {
+            font-weight: bold;
+            color: var(--primary-dark);
+        }
+        
+        .srt-timestamp {
+            color: var(--secondary-dark);
+            margin: 5px 0;
+        }
+        
+        .srt-text {
+            margin-top: 10px;
+            line-height: 1.5;
+        }
+        
+        .export-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            background: var(--secondary);
+            color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transform: translateX(200%);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .highlight {
+            background-color: #fff9c4;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-closed-captioning"></i> 文本转SRT字幕工具</h1>
+            <p>将连续文本（诗歌、口诀、台词等）自动转换为专业字幕文件，支持自定义时间参数，适用于教学视频、自制短片、多语言翻译等多种场景</p>
+            
+            <div class="scenario-cards">
+                <div class="scenario-card">
+                    <i class="fas fa-chalkboard-teacher"></i>
+                    <h3>教学视频</h3>
+                    <p>快速为知识点、操作口诀生成同步字幕，提升学习效果</p>
+                </div>
+                <div class="scenario-card">
+                    <i class="fas fa-film"></i>
+                    <h3>自制短片</h3>
+                    <p>将剧本台词或旁白转换为字幕文件，方便视频剪辑软件加载</p>
+                </div>
+                <div class="scenario-card">
+                    <i class="fas fa-language"></i>
+                    <h3>多语言翻译</h3>
+                    <p>生成基础字幕后翻译为其他语言，简化字幕翻译流程</p>
+                </div>
+            </div>
+        </header>
+        
+        <div class="main-content">
+            <div class="section settings-section">
+                <h2><i class="fas fa-sliders-h"></i> 参数设置</h2>
+                
+                <div class="param-group">
+                    <label for="char-time">一个字的时间（秒）</label>
+                    <input type="number" id="char-time" min="0.1" max="2" step="0.05" value="0.2">
+                    <div class="info-text">
+                        <strong>计算规则：</strong>单句时长 = 字数 × 单字时间<br>
+                        示例：10个字的句子 → 10 × 0.2s = 2.0秒
+                    </div>
+                </div>
+                
+                <div class="param-group">
+                    <label for="sentence-gap">句子间隔时间（秒）</label>
+                    <input type="number" id="sentence-gap" min="0.1" max="5" step="0.1" value="1.0">
+                    <div class="info-text">
+                        <strong>计算规则：</strong>下一句开始时间 = 上一句结束时间 + 间隔时间<br>
+                        示例：上一句结束于00:04.400 → 下一句开始于00:05.400
+                    </div>
+                </div>
+                
+                <button id="generate-btn" class="btn">
+                    <i class="fas fa-cogs"></i> 生成字幕
+                </button>
+                
+                <div class="info-text">
+                    <strong>使用提示：</strong>
+                    <ul>
+                        <li>文本分段：每行作为一个字幕块</li>
+                        <li>空行会被忽略，不会生成字幕</li>
+                        <li>时间轴根据字数自动计算生成</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="section input-section">
+                <h2><i class="fas fa-edit"></i> 输入文本</h2>
+                <textarea id="input-text" placeholder="请输入或粘贴需要转换的文本（每行作为一个字幕块）...">茶叶冲泡口诀：
+温杯洁具不可少，
+投茶适量味道好。
+水温控制是关键，
+绿茶白茶八十好。
+红茶乌龙九十五，
+黑茶普洱要沸腾。
+浸泡时间把握好，
+出汤干净香自飘。
+观色闻香品滋味，
+一杯好茶乐逍遥。</textarea>
+                <div class="example-text" id="load-example">点击加载示例文本</div>
+            </div>
+            
+            <div class="section preview-section">
+                <h2><i class="fas fa-file-alt"></i> SRT字幕预览</h2>
+                <div class="preview-container" id="preview">
+                    <div class="info-text">
+                        输入文本并点击"生成字幕"按钮后，将在此处显示生成的SRT字幕
+                    </div>
+                </div>
+                
+                <div class="export-buttons">
+                    <button id="copy-btn" class="btn btn-secondary">
+                        <i class="fas fa-copy"></i> 复制字幕
+                    </button>
+                    <button id="download-btn" class="btn btn-warning">
+                        <i class="fas fa-download"></i> 下载SRT文件
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>© 2023 文本转SRT字幕工具 | 让字幕制作更简单</p>
+        </footer>
+    </div>
+    
+    <div class="notification" id="notification">操作成功！</div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const charTimeInput = document.getElementById('char-time');
+            const sentenceGapInput = document.getElementById('sentence-gap');
+            const inputText = document.getElementById('input-text');
+            const generateBtn = document.getElementById('generate-btn');
+            const copyBtn = document.getElementById('copy-btn');
+            const downloadBtn = document.getElementById('download-btn');
+            const preview = document.getElementById('preview');
+            const notification = document.getElementById('notification');
+            const loadExample = document.getElementById('load-example');
+            
+            // 加载示例文本
+            loadExample.addEventListener('click', function() {
+                inputText.value = "茶叶冲泡口诀：\n温杯洁具不可少，\n投茶适量味道好。\n水温控制是关键，\n绿茶白茶八十好。\n红茶乌龙九十五，\n黑茶普洱要沸腾。\n浸泡时间把握好，\n出汤干净香自飘。\n观色闻香品滋味，\n一杯好茶乐逍遥。";
+            });
+            
+            // 生成SRT字幕
+            generateBtn.addEventListener('click', function() {
+                const charTime = parseFloat(charTimeInput.value) || 0.2;
+                const sentenceGap = parseFloat(sentenceGapInput.value) || 1.0;
+                const text = inputText.value.trim();
+                
+                if (!text) {
+                    showNotification('请输入要转换的文本');
+                    return;
+                }
+                
+                const srtContent = generateSRT(text, charTime, sentenceGap);
+                displayPreview(srtContent);
+                showNotification('字幕生成成功！');
+            });
+            
+            // 复制字幕
+            copyBtn.addEventListener('click', function() {
+                const srtText = getSRTText();
+                if (!srtText) return;
+                
+                navigator.clipboard.writeText(srtText)
+                    .then(() => showNotification('字幕已复制到剪贴板！'))
+                    .catch(err => showNotification('复制失败，请重试'));
+            });
+            
+            // 下载SRT文件
+            downloadBtn.addEventListener('click', function() {
+                const srtText = getSRTText();
+                if (!srtText) return;
+                
+                const blob = new Blob([srtText], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'generated-subtitles.srt';
+                document.body.appendChild(a);
+                a.click();
+                
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    showNotification('文件下载成功！');
+                }, 100);
+            });
+            
+            // 生成SRT内容
+            function generateSRT(text, charTime, sentenceGap) {
+                const lines = text.split('\n').filter(line => line.trim() !== '');
+                let srtContent = [];
+                let startTime = 0;
+                
+                lines.forEach((line, index) => {
+                    const lineText = line.trim();
+                    const duration = lineText.length * charTime;
+                    const endTime = startTime + duration;
+                    
+                    // 格式化时间
+                    const startFormatted = formatTime(startTime);
+                    const endFormatted = formatTime(endTime);
+                    
+                    // 构建SRT条目
+                    srtContent.push({
+                        index: index + 1,
+                        start: startFormatted,
+                        end: endFormatted,
+                        text: lineText
+                    });
+                    
+                    // 下一句开始时间
+                    startTime = endTime + sentenceGap;
+                });
+                
+                return srtContent;
+            }
+            
+            // 格式化时间
+            function formatTime(seconds) {
+                const hrs = Math.floor(seconds / 3600);
+                const mins = Math.floor((seconds % 3600) / 60);
+                const secs = seconds % 60;
+                const ms = Math.floor((secs - Math.floor(secs)) * 1000);
+                
+                return `${padZero(hrs)}:${padZero(mins)}:${padZero(Math.floor(secs))},${padZero(ms, 3)}`;
+            }
+            
+            // 补零函数
+            function padZero(num, length = 2) {
+                return num.toString().padStart(length, '0');
+            }
+            
+            // 显示预览
+            function displayPreview(srtContent) {
+                if (srtContent.length === 0) {
+                    preview.innerHTML = '<div class="info-text">未生成有效字幕内容</div>';
+                    return;
+                }
+                
+                let previewHTML = '';
+                srtContent.forEach(entry => {
+                    previewHTML += `
+                        <div class="srt-entry">
+                            <div class="srt-index">${entry.index}</div>
+                            <div class="srt-timestamp">${entry.start} --> ${entry.end}</div>
+                            <div class="srt-text">${entry.text}</div>
+                        </div>
+                    `;
+                });
+                
+                preview.innerHTML = previewHTML;
+            }
+            
+            // 获取SRT文本
+            function getSRTText() {
+                const entries = preview.querySelectorAll('.srt-entry');
+                if (entries.length === 0) {
+                    showNotification('请先生成字幕');
+                    return null;
+                }
+                
+                let srtText = '';
+                entries.forEach(entry => {
+                    const index = entry.querySelector('.srt-index').textContent;
+                    const timestamp = entry.querySelector('.srt-timestamp').textContent;
+                    const text = entry.querySelector('.srt-text').textContent;
+                    
+                    srtText += `${index}\n${timestamp}\n${text}\n\n`;
+                });
+                
+                return srtText.trim();
+            }
+            
+            // 显示通知
+            function showNotification(message) {
+                notification.textContent = message;
+                notification.classList.add('show');
+                
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                }, 3000);
+            }
+            
+            // 初始化时生成示例字幕
+            generateBtn.click();
+        });
+    </script>
+</body>
+</html>
